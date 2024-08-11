@@ -1,7 +1,11 @@
 import os
 import numpy as np
 import yaml
+import tensorflow as tf
 
+from tensorflow.keras.callbacks import ModelCheckpoint
+
+# source files
 from src.load_data import Dataloader
 from src.custom_callback import CustomCallback
 from src.utils import create_logger
@@ -28,34 +32,43 @@ if __name__ == '__main__':
     logger.info(f"Learning_rate=>{params.learning_rate}")
     logger.info(f"Batch_size=>{params.batch_size}")
     logger.info(f"Val_batch_size=>{params.val_batch_size}")
-    logger.info(f"Image_size=>{img_size}")
-    logger.info(f"Margin=>{margin}")
-    logger.info(f"decay_step=>{decay_step}")
-    logger.info(f"train_file_path={train_file_path}")
-    logger.info(f"val_file_path=>{val_file_path}")
-    logger.info(f"save_weights=>{save_weights}")
+    logger.info(f"Image_size=>{params.img_size}")
+    logger.info(f"Margin=>{params.margin}")
+    logger.info(f"decay_step=>{params.decay_step}")
+    logger.info(f"train_file_path={params.train_file_path}")
+    logger.info(f"val_file_path=>{params.val_file_path}")
+    logger.info(f"save_weights=>{params.save_weights}")
 
-    siamese_model  = create_model(img_size, margin=margin, initial_learning_rate = learning_rate, decay_step=decay_step)
+    # Create a siamese model
+    siamese_model  = create_model(params.img_size, margin=params.margin, initial_learning_rate = params.learning_rate, decay_step=params.decay_step)
         
-    if load_weights: 
+    if params.load_weights: 
         
-        with open(epoch_saved_path, 'r') as f:
+        with open(params.epoch_saved_path, 'r') as f:
             iteration = int(f.readlines()[0])
             logger.info(f"Loaded iteration =>{iteration} | Epoch => {iteration//steps_per_epoch}")
-            print(f"Loaded iteration =>{iteration} | Epoch => {iteration//steps_per_epoch}")
         
-
-        logger.info(f"Model_weights has been loaded location=>{save_weights}")
-        print(f"Model_weights has been loaded location==>{save_weights}")
-        siamese_model.build(input_shape=(None, img_size[0], img_size[1], 3))
-        siamese_model.load_weights(save_weights)
+        logger.info(f"Model_weights has been loaded location=>{params.save_weights}")
+        
+        siamese_model.build(input_shape=(None, params.img_size[0], params.img_size[1], 3))
+        siamese_model.load_weights(params.save_weights)
         
         tf.keras.backend.set_value(siamese_model.optimizer.iterations, iteration)
         val = tf.keras.backend.get_value(siamese_model.optimizer.iterations)
-        print(val)
         
 
     logger.info(f"steps_per_epoch=>{steps_per_epoch}")
     logger.info(f"validation_steps=>{validation_steps}")
 
-    loader = Dataloader(batch_size, val_batch_size, num_iter_per_style, img_size, train_file_path, val_file_path, '')
+    # Load Dataset
+    loader = Dataloader(params.batch_size, params.val_batch_size, params.num_iter_per_style, params.img_size, params.train_file_path, params.val_file_path)
+
+    # create checkpoint object
+    checkpoint_callback = ModelCheckpoint(filepath = params.save_weights, monitor='val_loss', verbose=1, save_best_only=False, mode='min',save_weights_only=True)
+
+    # Train the Model
+    history = siamese_model.fit(loader.train_iterator,
+                            validation_data=loader.test_iterator,
+                            steps_per_epoch=steps_per_epoch,
+                            validation_steps = validation_steps,
+                            epochs=9, workers=0, use_multiprocessing=False, callbacks=[checkpoint_callback, CustomCallback(logger, params.val_loss_save_dir, params.epoch_saved_path)])

@@ -1,4 +1,5 @@
 import logging
+import os
 
 def create_logger(model_name):
     logging.basicConfig(filename=f'logs/{model_name}/app.log', \

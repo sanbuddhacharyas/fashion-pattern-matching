@@ -5,11 +5,10 @@ import tensorflow as tf
 import tensorflow.compat.v1 as tf1
 
 class Dataloader():
-    def __init__(self, batch_size, val_batch_size, num_iter_per_style, img_size, filename_train, filename_val, dataset_path):
+    def __init__(self, batch_size, val_batch_size, num_iter_per_style, img_size, filename_train, filename_val):
         self.filename_train      = filename_train
         self.filename_val        = filename_val
         self.batch_size          = batch_size
-        self.dataset_path        = dataset_path
         self.img_size            = img_size
         self.val_batch_size      = val_batch_size
         self.num_iter_per_style  = num_iter_per_style

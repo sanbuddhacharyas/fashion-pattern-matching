@@ -1,3 +1,13 @@
+import logging
+
+def create_logger(model_name):
+    logging.basicConfig(filename=f'logs/{model_name}/app.log', \
+                    filemode='a', format='%(asctime)s -%(levelname)s- %(message)s')
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+
+    return create_logger
+
 def upload_file(file_name, bucket, object_name=None):
     """Upload a file to an S3 bucket
 

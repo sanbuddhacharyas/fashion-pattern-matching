@@ -1,0 +1,22 @@
+# Configure Parameters
+learning_rate      : 1e-6
+img_size           : [320, 320]
+batch_size         : 4
+val_batch_size     : 4
+num_iter_per_style : 2
+margin             : 1.5 
+decay_step         : 150000
+embedding_layer    : 'GlobalAvg'
+load_weights       :  False 
+
+
+# store file location
+train_file_path    : 'fashiondataset2-online-triplets/fashion_online_triplet_train.json'
+val_file_path      : 'fashiondataset2-online-triplets/fashion_online_triplet_validation.json'
+save_weights       : 'weights/{model_name}_model.h5'
+val_loss_save_dir  : 'logs/logs_triplet_val.txt'
+epoch_saved_path   : 'logs/epoch_.txt'
+
+# Calculate the total training size and validation size
+total_train :  215616
+total_test  :  41984

@@ -1,12 +1,13 @@
+import sys
+sys.path.insert(0, 'src')
+
 from tensorflow.keras.callbacks import  Callback
 from utils import upload_file
 
 class CustomCallback(Callback):
-    def __init__(self, siamese_model, logger, save_dir, epoch_saved_path):
-        self.logger           = logger
-        self.save_dir         = save_dir
-        self.epoch_saved_path = epoch_saved_path
-        self.siamese_model    = siamese_model
+    def __init__(self, logger, save_dir, epoch_saved_path):
+        self.logger = logger
+        self.save_dir = save_dir
    
     def on_epoch_end(self, epoch, logs=None):
         keys = list(logs.keys())

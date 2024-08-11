@@ -213,7 +213,7 @@ class SiameseModel(Model):
     
 
 # Atttention layer
-def channel_attention(input_shape, reduction: int = 16, name: str = "") -> KM.Model:
+def channel_attention(input_shape, reduction: int = 16, name: str = "") -> Model:
     """channel attention model
     Args:
         features (int): number of features for incoming tensor

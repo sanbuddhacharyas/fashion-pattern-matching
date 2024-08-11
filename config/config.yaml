@@ -11,8 +11,8 @@ load_weights       :  False
 
 
 # store file location
-train_file_path    : 'fashiondataset2-online-triplets/fashion_online_triplet_train.json'
-val_file_path      : 'fashiondataset2-online-triplets/fashion_online_triplet_validation.json'
+train_file_path    : 'data/fashion_online_triplet_train.json'
+val_file_path      : 'data/fashion_online_triplet_validation.json'
 save_weights       : 'weights/{model_name}_model.h5'
 val_loss_save_dir  : 'logs/logs_triplet_val.txt'
 epoch_saved_path   : 'logs/epoch_.txt'

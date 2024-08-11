@@ -5,3 +5,6 @@
 *.pth
 *.h5
 *.txt
+*.log
+*.json
+data/*

@@ -72,6 +72,8 @@ class Dataloader():
                     yield item
 
     def paras_data(self, img_path):
+
+        img_path        = 'data/' + img_path
         class_label     = tf1.string_split([img_path],sep='/').values[-2]
         image           = tf1.image.decode_png(tf.io.read_file(img_path))
         image           = tf1.image.convert_image_dtype(image, tf.uint8)

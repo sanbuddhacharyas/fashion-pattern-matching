@@ -47,9 +47,9 @@ class Dataloader():
 
                 # shuffle the item from in selected style which is 
                 random.shuffle(selected_style)
+                
                 # limit the maximum item from each style
                 iterate         = (num_item_per_style if len(selected_style) > num_item_per_style else len(selected_style))
-                
                 
                 # loop through each item within style
                 for item in selected_style[:iterate]:
@@ -106,7 +106,6 @@ class Dataloader():
         else:
             loader   = tf.data.Dataset.from_generator(self.dataset_generator, args=[self.filename_val, self.val_batch_size, self.num_iter_per_style], output_types=tf.string, output_shapes = (),)
             
-        
         loader   = loader.repeat()
         loader   = loader.map(self.paras_data)
         if is_training:
@@ -128,6 +127,5 @@ class Dataloader():
         self.test_dataset  = self.create_dataset(is_training = False)
 
         #create an iterator 
-
         self.train_iterator = tf1.data.make_one_shot_iterator(self.train_dataset)
         self.test_iterator  = tf1.data.make_one_shot_iterator(self.test_dataset)

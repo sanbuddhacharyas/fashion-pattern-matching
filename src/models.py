@@ -1,3 +1,13 @@
+import numpy as np
+import tensorflow as tf
+
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Layer
+from tensorflow.keras        import metrics
+
+from tensorflow.keras.layers import Input, concatenate, Conv2D, Dense, BatchNormalization, Flatten, Layer, GlobalAveragePooling2D,AveragePooling2D, Activation
+from tensorflow.keras.applications.resnet50 import ResNet50, preprocess_input
+
 class DistanceLayer(Layer):
     """
     This layer is responsible for computing the distance between the anchor
@@ -122,19 +132,19 @@ class SiameseModel(Model):
             labels: tf.int32 `Tensor` with shape [batch_size]
         """
         # Check that i, j and k are distinct
-        indices_equal = tf.cast(tf.eye(tf.shape(labels)[0]), tf.bool)
+        indices_equal     = tf.cast(tf.eye(tf.shape(labels)[0]), tf.bool)
         indices_not_equal = tf.logical_not(indices_equal)
-        i_not_equal_j = tf.expand_dims(indices_not_equal, 2)
-        i_not_equal_k = tf.expand_dims(indices_not_equal, 1)
-        j_not_equal_k = tf.expand_dims(indices_not_equal, 0)
+        i_not_equal_j     = tf.expand_dims(indices_not_equal, 2)
+        i_not_equal_k     = tf.expand_dims(indices_not_equal, 1)
+        j_not_equal_k     = tf.expand_dims(indices_not_equal, 0)
 
         distinct_indices = tf.logical_and(tf.logical_and(i_not_equal_j, i_not_equal_k), j_not_equal_k)
 
 
         # Check if labels[i] == labels[j] and labels[i] != labels[k]
         label_equal = tf.equal(tf.expand_dims(labels, 0), tf.expand_dims(labels, 1))
-        i_equal_j = tf.expand_dims(label_equal, 2)
-        i_equal_k = tf.expand_dims(label_equal, 1)
+        i_equal_j   = tf.expand_dims(label_equal, 2)
+        i_equal_k   = tf.expand_dims(label_equal, 1)
 
         valid_labels = tf.logical_and(i_equal_j, tf.logical_not(i_equal_k))
 
@@ -177,8 +187,8 @@ class SiameseModel(Model):
 
         # Put to zero the invalid triplets
         # (where label(a) != label(p) or label(n) == label(a) or a == p)
-        mask = self._get_triplet_mask(labels)
-        mask = tf.cast(mask, dtype=tf.float32)
+        mask         = self._get_triplet_mask(labels)
+        mask         = tf.cast(mask, dtype=tf.float32)
         triplet_loss = tf.multiply(mask, triplet_loss)
 
         # Remove negative losses (i.e. the easy triplets)
@@ -213,34 +223,35 @@ def channel_attention(input_shape, reduction: int = 16, name: str = "") -> KM.Mo
         KM.Model: channelwise attention appllier model
     """
     features     = input_shape[-1]
-    input_tensor = KL.Input(shape=input_shape)
+    input_tensor = Input(shape=input_shape)
 
     # Average pool over a feature map across channels
     avg = tf.reduce_mean(input_tensor, axis=[1, 2], keepdims=True)
+    
     # Max pool over a feature map across channels
     max_pool = tf.reduce_max(input_tensor, axis=[1, 2], keepdims=True)
 
     # Number of features for middle layer of shared MLP
     reduced_features = int(features // reduction)
 
-    dense1 = KL.Dense(reduced_features)
+    dense1      = Dense(reduced_features)
     avg_reduced = dense1(avg)
     max_reduced = dense1(max_pool)
 
-    dense2 = KL.Dense(features)
-    avg_attention = dense2(KL.Activation("relu")(avg_reduced))
-    max_attention = dense2(KL.Activation("relu")(max_reduced))
+    dense2        = Dense(features)
+    avg_attention = dense2(Activation("relu")(avg_reduced))
+    max_attention = dense2(Activation("relu")(max_reduced))
 
     # Channel-wise attention
-    overall_attention = KL.Activation("sigmoid")(avg_attention + max_attention)
+    overall_attention = Activation("sigmoid")(avg_attention + max_attention)
 
-    return KM.Model(
+    return Model(
         inputs=input_tensor, outputs=input_tensor * overall_attention, name=name
     )
 
 
 def spatial_attention(
-    input_shape, kernel: int = 7 , bias: bool = False, name: str = "") -> KM.Model:
+    input_shape, kernel: int = 7 , bias: bool = False, name: str = "") -> Model:
     """spatial attention model
     Args:
         features (int): number of features for incoming tensor
@@ -248,10 +259,10 @@ def spatial_attention(
         bias (bool, optional): whether to use bias in convolutional layer
         name (str, optional): Defaults to "".
     Returns:
-        KM.Model: spatial attention appllier model
+        Model: spatial attention appllier model
     """
 
-    input_tensor = KL.Input(shape=input_shape)
+    input_tensor = Input(shape=input_shape)
     # Average pool across channels for a given spatial location
     avg = tf.reduce_mean(input_tensor, axis=[-1], keepdims=True)
 
@@ -261,12 +272,12 @@ def spatial_attention(
     concat_pool = tf.concat([avg, max_pool], axis=-1)
 
     # Attention for spatial locations
-    conv = KL.Conv2D(
+    conv = Conv2D(
         1, (kernel, kernel), strides=(1, 1), padding="same", use_bias=bias
     )(concat_pool)
-    attention = KL.Activation("sigmoid")(KL.BatchNormalization()(conv))
+    attention = Activation("sigmoid")(BatchNormalization()(conv))
 
-    return KM.Model(inputs=input_tensor, outputs=input_tensor * attention, name=name)
+    return Model(inputs=input_tensor, outputs=input_tensor * attention, name=name)
 
 
 def cbam_block(
@@ -307,11 +318,6 @@ def spp_layer(input_, levels=(4, 2, 1), name='SPP_layer'):
         ksize_1 = stride_1 + (shape[1] % n)
         ksize_2 = stride_2 + (shape[2] % n)
         
-#         pool = tf.nn.max_pool(input_,
-#                               ksize=[1, ksize_1, ksize_2, 1],
-#                               strides=[1, stride_1, stride_2, 1],
-#                               padding='VALID')
-        
         pool = tf.keras.layers.MaxPooling2D(pool_size=(ksize_1, ksize_2), \
                                              strides=(stride_1, stride_2), padding='valid')(input_)
     
@@ -336,7 +342,7 @@ def encoder(img_size):
         if layer.name == 'conv1_relu':
             attention_branch = layer.output
     
-     # Applying CBAM in feature layer
+    # Applying CBAM in feature layer
     x             = Conv2D(4096, 1, padding="same", activation='relu', name='feature_vector')(base_model.output)
     embedding     = GlobalAveragePooling2D()(x)
     
